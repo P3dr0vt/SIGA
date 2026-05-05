@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SIGA – Gestão de Alocação</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: { extend: { colors: {
+        'siga-dark': '#0D3566',
+        'siga-mid':  '#1E6BB8',
+        'siga-btn':  '#2574C2',
+        'siga-teal': '#5BAF9E'
+      }}}
+    }
+  </script>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #F4F5F7;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    #app-header { flex-shrink: 0; }
+
+    #app-wrapper {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+      position: relative;
+    }
+
+    #app-main {
+      flex: 1;
+      overflow-y: auto;
+      padding: 20px 24px;
+    }
+
+    #app-content {
+      flex: 1;
+      overflow: hidden;
+    }
+
+    #app-sidebar {
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      width: 280px;
+      background: #1557A0;
+      transform: translateX(100%);
+      transition: transform 0.25s cubic-bezier(0.4,0,0.2,1);
+      z-index: 20;
+      border-left: 3px solid rgba(255,255,255,0.1);
+      overflow-y: auto;
+    }
+
+    /* Blocos */
+    .bloco-tabela-wrapper {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .col-header {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+    }
+
+    .col-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      border-top: 1px solid #E5E5E5;
+    }
+
+    .col-cell {
+      padding: 9px 12px;
+      background: #EFEFEF;
+      color: #444;
+      font-size: 0.8rem;
+      border-right: 1px solid #E0E0E0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* Turno badge no header */
+    .turno-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #1E6BB8;
+      border-radius: 8px;
+      padding: 6px 14px;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .turno-badge:hover { background: #1a5fa0; }
+
+    /* Botão Turno ativo */
+    .btn-turno {
+      padding: 6px 14px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 0.82rem;
+      transition: all 0.15s;
+    }
+    .btn-turno.ativo {
+      background: white;
+      color: #0D3566;
+    }
+    .btn-turno:not(.ativo) {
+      background: transparent;
+      color: rgba(255,255,255,0.6);
+      border: 1.5px solid rgba(255,255,255,0.3);
+    }
+    .btn-turno:not(.ativo):hover {
+      color: white;
+      border-color: white;
+    }
+
+    /* Scrollbar personalizada */
+    #app-main::-webkit-scrollbar { width: 6px; }
+    #app-main::-webkit-scrollbar-track { background: transparent; }
+    #app-main::-webkit-scrollbar-thumb { background: #C0C0C0; border-radius: 3px; }
+
+    /* Sidebar botões hover */
+    #app-sidebar button:hover { background: #1E6BB8 !important; }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <div id="app-header">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:0 20px;height:68px;background:#0D3566;">
+
+      <!-- Logo -->
+      <div style="display:flex;align-items:center;gap:10px;cursor:pointer;" id="logo-link">
+        <svg width="40" height="26" viewBox="0 0 40 26" fill="none">
+          <rect x="0" y="0" width="40" height="10" rx="2.5" fill="white"/>
+          <rect x="6" y="16" width="34" height="10" rx="2.5" fill="white"/>
+        </svg>
+        <div>
+          <div style="color:white;font-weight:900;font-size:1.35rem;letter-spacing:0.06em;line-height:1.1;">SIGA</div>
+          <div style="color:rgba(255,255,255,0.6);font-size:0.58rem;line-height:1.3;">Sistema Integrado de<br>Gestão de Alocação</div>
+        </div>
+      </div>
+
+      <!-- Centro dinâmico -->
+      <div id="header-center" style="display:flex;align-items:center;gap:10px;"></div>
+
+      <!-- Menu hamburger -->
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button id="btn-logout" title="Sair" style="background:rgba(255,255,255,0.1);border:none;border-radius:8px;padding:7px 10px;cursor:pointer;color:rgba(255,255,255,0.7);font-size:0.75rem;font-weight:600;">
+          Sair
+        </button>
+        <button id="btn-menu" style="background:none;border:none;cursor:pointer;padding:6px 4px;">
+          <svg width="24" height="18" viewBox="0 0 24 18" fill="none">
+            <rect y="0" width="24" height="3" rx="1.5" fill="white"/>
+            <rect y="7.5" width="24" height="3" rx="1.5" fill="white"/>
+            <rect y="15" width="24" height="3" rx="1.5" fill="white"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Sub-header turno (visível só na view main) -->
+    <div id="subheader-turno" style="background:#1557A0;padding:8px 20px;display:flex;align-items:center;gap:8px;border-bottom:2px solid #0D3566;">
+      <span style="color:rgba(255,255,255,0.6);font-size:0.78rem;font-weight:600;margin-right:4px;">TURNO:</span>
+      <button class="btn-turno ativo" data-turno="manha">Manhã</button>
+      <button class="btn-turno" data-turno="tarde">Tarde</button>
+      <button class="btn-turno" data-turno="noite">Noite</button>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:8px;">
+        <button id="btn-todos" style="background:transparent;border:1.5px solid rgba(255,255,255,0.45);border-radius:6px;padding:5px 16px;color:rgba(255,255,255,0.7);font-size:0.8rem;font-weight:700;cursor:pointer;transition:all 0.15s;">TODOS</button>
+
+        <!-- Visão geral de status das salas -->
+        <button id="btn-status" title="Status das Salas" style="
+          display:flex;align-items:center;gap:6px;
+          background:rgba(255,255,255,0.12);border:1.5px solid rgba(255,255,255,0.35);
+          border-radius:6px;padding:5px 12px;cursor:pointer;
+          color:rgba(255,255,255,0.85);font-size:0.78rem;font-weight:700;letter-spacing:0.04em;
+          transition:background 0.15s;
+        ">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2">
+            <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+            <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+          </svg>
+          STATUS
+        </button>
+
+        <button id="btn-abre-tv" title="Abrir modo TV" style="background:rgba(255,255,255,0.1);border:none;border-radius:6px;padding:6px 10px;cursor:pointer;" >
+          <svg width="16" height="14" viewBox="0 0 20 16" fill="none" stroke="white" stroke-width="2"><rect x="1" y="1" width="18" height="11" rx="2"/><line x1="7" y1="15" x2="13" y2="15"/><line x1="10" y1="12" x2="10" y2="15"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- WRAPPER -->
+  <div id="app-wrapper">
+
+    <!-- MAIN VIEW (blocos) -->
+    <div id="app-main">
+      <div id="blocos-container"></div>
+    </div>
+
+    <!-- CONTENT VIEW (management pages) -->
+    <div id="app-content" style="display:none;"></div>
+
+    <!-- SIDEBAR -->
+    <div id="app-sidebar">
+      <div style="padding:16px;">
+        <div style="color:rgba(255,255,255,0.5);font-size:0.7rem;letter-spacing:0.1em;font-weight:700;margin-bottom:12px;padding:0 4px;">CADASTROS</div>
+        <div style="display:flex;flex-direction:column;gap:8px;" id="sidebar-nav"></div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="./js/dashboard.js"></script>
+</body>
+</html>
