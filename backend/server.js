@@ -62,7 +62,7 @@ app.use(express.json({ limit: '32kb' }));
 app.use(express.urlencoded({ extended: false, limit: '32kb' }));
 
 // Servir arquivos estáticos do frontend
-app.use(express.static(path.join(__dirname, '..', 'frontend')));
+app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // Rotas da API
 app.use('/api/auth/login', limitarLogin);
@@ -76,7 +76,7 @@ app.use('/api/transferencias', auth.autenticar, transferenciasRoutes);
 
 // Rota padrão: redireciona para o login
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'frontend', 'login.html'));
+  res.sendFile(path.join(__dirname, '..', 'public', 'login.html'));
 });
 
 async function garantirEstruturaBanco() {

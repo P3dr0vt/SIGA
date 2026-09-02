@@ -2,12 +2,12 @@
   "name": "siga-backend",
   "version": "1.0.0",
   "description": "Sistema Integrado de Gestão de Alocação - Backend",
-  "main": "server.js",
+  "main": "index.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node server.js",
-    "check": "node --check server.js && node --check routes/auth.js",
-    "create-admin": "node scripts/create-admin.js"
+    "start": "node backend/server.js",
+    "dev": "node backend/server.js",
+    "check": "node --check index.js && node --check backend/server.js && node --check backend/routes/auth.js",
+    "create-admin": "node backend/scripts/create-admin.js"
   },
   "dependencies": {
     "express": "^4.18.2",

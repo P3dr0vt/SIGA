@@ -23,11 +23,11 @@ Nao importe `database/siga_final.sql` no Supabase: esse arquivo ainda usa sintax
 npm run create-admin
 ```
 
-Remova `ADMIN_PASSWORD` do ambiente assim que o comando terminar.
+Remova `ADMIN_PASSWORD` do ambiente assim que o comando terminar. Execute o comando na raiz do projeto.
 
 ## Validacoes finais
 
-- Execute `npm ci` e `npm run check` dentro de `backend`.
+- Execute `npm ci` e `npm run check` na raiz do projeto.
 - Teste login, primeiro acesso, expiracao da sessao e cada operacao com perfis admin, instrutor e TV.
 - Rode uma analise de dependencias e um scanner DAST contra um ambiente de homologacao.
 - Confira os logs sem dados pessoais e habilite alertas de erros e tentativas excessivas de login.

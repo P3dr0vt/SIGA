@@ -1,15 +1,9 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "version": 2,
-  "installCommand": "cd backend && npm ci --omit=dev",
-  "functions": {
-    "api/index.js": {
-      "includeFiles": "frontend/**",
-      "maxDuration": 10
-    }
-  },
+  "framework": null,
   "rewrites": [
-    { "source": "/(.*)", "destination": "/api/index.js" }
+    { "source": "/", "destination": "/login.html" }
   ],
   "headers": [
     {

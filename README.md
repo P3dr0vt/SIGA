@@ -11,13 +11,12 @@ O backend atual ainda utiliza o driver MySQL. Antes da publicacao com Supabase, 
 ## Estrutura
 
 ```text
-api/                 entrada serverless da Vercel
 backend/
   config/            conexao com o banco
   routes/            endpoints da API
   scripts/           tarefas administrativas
 database/            schema legado MySQL, temporariamente mantido para migracao
-frontend/
+public/               arquivos publicados pela CDN da Vercel
   css/               estilos
   js/                comportamento das telas
   pages/             telas de gestao
@@ -31,7 +30,7 @@ vercel.json          configuracao do deploy serverless
 
 1. Instale uma versao LTS atual do Node.js.
 2. Copie `.env.example` para `.env` e use apenas credenciais de desenvolvimento.
-3. Entre em `backend` e execute `npm ci`.
+3. Na raiz do projeto, execute `npm ci`.
 4. Execute `npm run check` e depois `npm start`.
 
 O arquivo `.env` nunca deve ser enviado ao repositorio.
