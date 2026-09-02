@@ -1,0 +1,213 @@
+/* =============================================
+   SIGA - Login CSS
+   Identidade Visual: Azul escuro + Teal
+   ============================================= */
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Segoe UI', Arial, sans-serif;
+  background-image: url('fundo.png');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Decorações geométricas de fundo (canto direito) */
+.bg-decoration {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 45%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.deco-square {
+  position: absolute;
+  border: 2.5px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+}
+
+.deco-1 {
+  width: 320px;
+  height: 320px;
+  top: 5%;
+  right: -60px;
+  transform: rotate(10deg);
+}
+
+.deco-2 {
+  width: 240px;
+  height: 240px;
+  top: 30%;
+  right: 80px;
+  transform: rotate(-5deg);
+}
+
+.deco-3 {
+  width: 400px;
+  height: 400px;
+  bottom: -80px;
+  right: -100px;
+  border-radius: 50%;
+  border-width: 2px;
+}
+
+/* Container principal do login */
+.login-container {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+  width: 100%;
+  max-width: 460px;
+  padding: 20px;
+}
+
+/* Logo */
+.logo-area {
+  display: flex;
+  justify-content: center;
+}
+
+.logo-img {
+  max-width: 200px;
+  height: auto;
+  filter: drop-shadow(0 2px 8px rgba(0,0,0,0.3));
+}
+
+/* Formulário */
+.login-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field-group label {
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  padding-left: 2px;
+}
+
+.field-group input {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1.5px solid rgba(255, 255, 255, 0.35);
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 15px;
+  padding: 14px 16px;
+  outline: none;
+  transition: border-color 0.2s, background 0.2s;
+  width: 100%;
+}
+
+.field-group input::placeholder {
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.field-group input:focus {
+  border-color: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.13);
+}
+
+/* Mensagem de erro */
+.erro-msg {
+  background: rgba(220, 50, 50, 0.2);
+  border: 1px solid rgba(220, 50, 50, 0.5);
+  border-radius: 6px;
+  color: #ffaaaa;
+  font-size: 13px;
+  padding: 10px 14px;
+  text-align: center;
+}
+
+/* Botão Entrar */
+.btn-entrar {
+  background: #5bbfb5;
+  border: none;
+  border-radius: 8px;
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  padding: 15px;
+  text-transform: uppercase;
+  transition: background 0.2s, transform 0.1s, box-shadow 0.2s;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.btn-entrar:hover {
+  background: #4aada3;
+  box-shadow: 0 4px 16px rgba(91, 191, 181, 0.4);
+}
+
+.btn-entrar:active {
+  transform: scale(0.98);
+}
+
+.btn-entrar:disabled {
+  background: #3a8a82;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+/* Logo SENAI */
+.senai-logo {
+  margin-top: 8px;
+}
+
+.senai-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.1;
+}
+
+.senai-nome {
+  color: #ffffff;
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: 3px;
+}
+
+.senai-cidade {
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 2px;
+}
+
+/* Responsividade */
+@media (max-width: 480px) {
+  .login-container {
+    padding: 16px;
+  }
+  .logo-svg {
+    width: 160px;
+  }
+}

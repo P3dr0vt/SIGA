@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GERA - Login</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="css/login.css" />
+</head>
+<body>
+  <div class="bg-decoration">
+    <div class="deco-square deco-1"></div>
+    <div class="deco-square deco-2"></div>
+    <div class="deco-square deco-3"></div>
+  </div>
+
+  <div class="login-container">
+    <div class="logo-area">
+      <img src="logo-area.png" alt="GERA Logo" class="logo-img">
+    </div>
+
+    <form id="loginForm" class="login-form" novalidate>
+      <div class="field-group">
+        <label for="email">E-mail ou Matrícula</label>
+        <!-- type="text" para aceitar matrícula numérica sem bloqueio do browser -->
+        <input
+          type="text"
+          id="email"
+          name="email"
+          placeholder="Ex: admin@senai.com ou 1001"
+          autocomplete="username"
+          required
+        />
+      </div>
+
+      <div class="field-group">
+        <label for="senha">Senha</label>
+        <input
+          type="password"
+          id="senha"
+          name="senha"
+          placeholder="Digite sua senha"
+          autocomplete="current-password"
+          required
+        />
+      </div>
+
+      <div id="erroMsg" class="erro-msg" style="display:none;"></div>
+
+      <button type="submit" class="btn-entrar" id="btnEntrar">
+        <span id="btnTexto">Entrar</span>
+        <span id="btnLoading" style="display:none;">Aguarde...</span>
+      </button>
+    </form>
+
+    <div class="senai-logo">
+      <div class="senai-text">
+        <span class="senai-nome">SENAI</span>
+        <span class="senai-cidade">NOVA LIMA</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL TROCA DE SENHA (primeiro acesso) -->
+  <div id="modalTrocaSenha" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:999; display:none; align-items:center; justify-content:center;">
+    <div style="background:#fff; border-radius:16px; padding:32px; width:90%; max-width:380px; box-shadow: 0 8px 32px rgba(0,0,0,0.3);">
+      <h2 style="color:#1a4a9f; margin-bottom:8px; font-size:20px;"><i class="bi bi-shield-lock-fill"></i> Primeiro Acesso</h2>
+      <p style="color:#666; font-size:14px; margin-bottom:20px;">Por segurança, crie uma nova senha para continuar.</p>
+      <div style="margin-bottom:16px;">
+        <label style="display:block; font-weight:600; margin-bottom:6px; color:#333;">Nova Senha (mínimo 4 caracteres)</label>
+        <input type="password" id="novaSenha" placeholder="Digite sua nova senha"
+          style="width:100%; padding:12px; border:1.5px solid #ddd; border-radius:8px; font-size:14px; outline:none;" />
+      </div>
+      <div style="margin-bottom:20px;">
+        <label style="display:block; font-weight:600; margin-bottom:6px; color:#333;">Confirmar Nova Senha</label>
+        <input type="password" id="confirmarSenha" placeholder="Confirme sua nova senha"
+          style="width:100%; padding:12px; border:1.5px solid #ddd; border-radius:8px; font-size:14px; outline:none;" />
+      </div>
+      <div id="erroTroca" style="display:none; color:#dc3545; font-size:13px; margin-bottom:12px; font-weight:600;"></div>
+      <button onclick="confirmarTrocaSenha()"
+        style="width:100%; background:#1a4a9f; color:#fff; border:none; border-radius:8px; padding:14px; font-size:15px; font-weight:700; cursor:pointer;">
+        SALVAR NOVA SENHA
+      </button>
+    </div>
+  </div>
+
+  <script src="js/login.js"></script>
+</body>
+</html>

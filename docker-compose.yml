@@ -1,0 +1,57 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: gera-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: m3l@Chuck
+      MYSQL_DATABASE: siga_db
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./database/siga_final.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-pm3l@Chuck"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - gera-network
+
+  app:
+    build: .
+    container_name: gera-app
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PORT: 3000
+      DB_HOST: db
+      DB_USER: root
+      DB_PASSWORD: m3l@Chuck
+      DB_NAME: siga_db
+      JWT_SECRET: "SenaiNovaLima@2024!xK9mP2qR"
+    networks:
+      - gera-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: gera-nginx
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - app
+    networks:
+      - gera-network
+
+volumes:
+  db_data:
+
+networks:
+  gera-network:
+    driver: bridge
