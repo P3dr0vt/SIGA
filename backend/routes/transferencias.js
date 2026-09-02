@@ -247,7 +247,8 @@ router.get('/:id', async (req, res) => {
       JOIN Salas s ON a.id_sala = s.id_sala
       JOIN Turmas t ON a.id_turma = t.id_turma
       WHERE tp.id_transferencia = ?
-    `, [req.params.id]);
+        AND (? = 'admin' OR tp.id_instrutor_origem = ? OR tp.id_instrutor_destino = ?)
+    `, [req.params.id, perfilUsuario(req), idInstrutorUsuario(req), idInstrutorUsuario(req)]);
 
     if (rows.length === 0) {
       return res.status(404).json({ erro: 'Transferência não encontrada.' });

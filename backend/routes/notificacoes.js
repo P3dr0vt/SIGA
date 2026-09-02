@@ -20,11 +20,15 @@ router.get('/', async (req, res) => {
 
 // Marcar como lida
 router.put('/:id/lida', async (req, res) => {
+  if (!req.usuario || !req.usuario.id_instrutor) {
+    return res.status(403).json({ erro: 'Operacao disponivel apenas para instrutores.' });
+  }
   try {
-    await db.execute(
-      'UPDATE Notificacoes SET lida = 1 WHERE id_notificacao = ?',
-      [req.params.id]
+    const [result] = await db.execute(
+      'UPDATE Notificacoes SET lida = 1 WHERE id_notificacao = ? AND id_instrutor = ?',
+      [req.params.id, req.usuario.id_instrutor]
     );
+    if (result.affectedRows === 0) return res.status(404).json({ erro: 'Notificacao nao encontrada.' });
     res.json({ mensagem: 'Notificação marcada como lida.' });
   } catch (error) {
     res.status(500).json({ erro: error.message });
@@ -33,6 +37,10 @@ router.put('/:id/lida', async (req, res) => {
 
 // Deletar todas as notificações de um instrutor (para limpeza após aceitar/recusar transferência)
 router.delete('/instrutor/:id_instrutor', async (req, res) => {
+  const proprioInstrutor = Number(req.params.id_instrutor) === Number(req.usuario && req.usuario.id_instrutor);
+  if (!proprioInstrutor && (!req.usuario || req.usuario.perfil !== 'admin')) {
+    return res.status(403).json({ erro: 'Sem permissao para excluir estas notificacoes.' });
+  }
   try {
     await db.execute(
       'DELETE FROM Notificacoes WHERE id_instrutor = ?',

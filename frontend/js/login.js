@@ -1,6 +1,6 @@
 // SIGA - Login JavaScript (Versão 4 - Corrigida)
 const API_BASE = '/api';
-let emailPrimeiroAcesso = '';
+let tokenPrimeiroAcesso = '';
 
 document.getElementById('loginForm').addEventListener('submit', async function (e) {
   e.preventDefault();
@@ -33,12 +33,10 @@ document.getElementById('loginForm').addEventListener('submit', async function (
     if (response.ok) {
       if (data.primeiro_acesso) {
         // Abre modal de troca de senha
-        emailPrimeiroAcesso = data.email;
+        tokenPrimeiroAcesso = data.troca_token;
         document.getElementById('modalTrocaSenha').style.display = 'flex';
       } else {
         localStorage.setItem('gera_token', data.token);
-        localStorage.setItem('gera_token', data.token);
-        localStorage.setItem('gera_usuario', JSON.stringify(data.usuario));
         localStorage.setItem('gera_usuario', JSON.stringify(data.usuario));
         window.location.href = 'index.html';
       }
@@ -62,8 +60,8 @@ async function confirmarTrocaSenha() {
 
   erroTroca.style.display = 'none';
 
-  if (novaSenha.length < 4) {
-    erroTroca.textContent = 'A senha deve ter pelo menos 4 caracteres.';
+  if (novaSenha.length < 10 || !/[a-z]/.test(novaSenha) || !/[A-Z]/.test(novaSenha) || !/\d/.test(novaSenha) || !/[^A-Za-z0-9]/.test(novaSenha)) {
+    erroTroca.textContent = 'Use 10 ou mais caracteres, com maiuscula, minuscula, numero e simbolo.';
     erroTroca.style.display = 'block';
     return;
   }
@@ -78,7 +76,7 @@ async function confirmarTrocaSenha() {
     const resTroca = await fetch(`${API_BASE}/auth/trocar-senha`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: emailPrimeiroAcesso, novaSenha })
+      body: JSON.stringify({ troca_token: tokenPrimeiroAcesso, novaSenha })
     });
 
     if (resTroca.ok) {
@@ -102,4 +100,3 @@ async function confirmarTrocaSenha() {
     erroTroca.style.display = 'block';
   }
 }
-

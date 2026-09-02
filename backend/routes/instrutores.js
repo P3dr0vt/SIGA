@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
+const bcrypt = require('bcryptjs');
 
 // GET / - Listar todos
 router.get('/', async (req, res) => {
@@ -60,7 +61,8 @@ router.post('/', async (req, res) => {
     const id_instrutor = result.insertId;
 
     const email = `${matricula}@senai.com`;
-    const senhaPadrao = matricula; // Senha inicial = matrícula
+    const senhaPadrao = matricula; // Entregue uma unica vez ao administrador.
+    const senhaHash = await bcrypt.hash(senhaPadrao, 12);
 
     const [emailExiste] = await connection.execute('SELECT id_usuario FROM Usuarios WHERE email = ?', [email]);
     if (emailExiste.length > 0) {
@@ -70,7 +72,7 @@ router.post('/', async (req, res) => {
 
     await connection.execute(
       'INSERT INTO Usuarios (email, senha, nome, perfil, primeiro_acesso, id_instrutor_vinculado) VALUES (?, ?, ?, ?, ?, ?)',
-      [email, senhaPadrao, nome.trim(), 'instrutor', 1, id_instrutor]
+      [email, senhaHash, nome.trim(), 'instrutor', 1, id_instrutor]
     );
 
     await connection.commit();

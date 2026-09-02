@@ -74,14 +74,6 @@ CREATE TABLE Alocacoes (
 -- DADOS INICIAIS
 -- ==========================================================
 
--- Admin (primeiro_acesso = 0 pois é conta do sistema)
-INSERT INTO Usuarios (email, senha, nome, perfil, primeiro_acesso)
-VALUES ('admin@senai.com', 'admin123', 'Administrador SIGA', 'admin', 0);
-
--- Monitor TV
-INSERT INTO Usuarios (email, senha, nome, perfil, primeiro_acesso)
-VALUES ('tv@senai.com', 'tv123', 'Monitor Entrada', 'tv', 0);
-
 -- Instrutores de exemplo
 INSERT INTO Instrutores (nome, matricula) VALUES
 ('Carlos Alberto', '1001'),
@@ -89,13 +81,8 @@ INSERT INTO Instrutores (nome, matricula) VALUES
 ('João Pedro', '1003'),
 ('Ana Beatriz', '1004');
 
--- Usuários vinculados aos instrutores
--- Login: matrícula (ex: 1001) | Senha inicial: a própria matrícula | primeiro_acesso=1 (força troca de senha)
-INSERT INTO Usuarios (email, senha, nome, perfil, primeiro_acesso, id_instrutor_vinculado) VALUES
-('1001@senai.com', '1001', 'Carlos Alberto',  'instrutor', 1, 1),
-('1002@senai.com', '1002', 'Maria Fernanda',  'instrutor', 1, 2),
-('1003@senai.com', '1003', 'João Pedro',      'instrutor', 1, 3),
-('1004@senai.com', '1004', 'Ana Beatriz',     'instrutor', 1, 4);
+-- Usuários não são incluídos no seed: crie as contas por um processo administrativo
+-- controlado para que nenhuma credencial seja versionada em texto puro.
 
 -- Salas de exemplo
 INSERT INTO Salas (nome, bloco) VALUES

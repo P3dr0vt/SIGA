@@ -1,25 +1,21 @@
 const mysql = require('mysql2/promise');
 
-const pool = mysql.createPool({
-  host: 'db',
-  user: 'root',
-  password: 'm3l@Chuck',       // Altere para a sua senha do MySQL se necessário
-  database: 'siga_db',
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0
-});
+const required = ['DB_HOST', 'DB_USER', 'DB_PASSWORD', 'DB_NAME'];
+const missing = required.filter((name) => !process.env[name]);
+if (missing.length > 0) throw new Error(`Variaveis de banco ausentes: ${missing.join(', ')}`);
 
-// Testa a conexão ao iniciar
-(async () => {
-  try {
-    const conn = await pool.getConnection();
-    console.log('✅ Banco de dados conectado com sucesso!');
-    conn.release();
-  } catch (err) {
-    console.error('❌ Erro ao conectar ao banco de dados:', err.message);
-    console.error('   Verifique as credenciais em backend/config/database.js');
-  }
-})();
+const pool = mysql.createPool({
+  host: process.env.DB_HOST,
+  port: Number(process.env.DB_PORT || 3306),
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: true } : undefined,
+  waitForConnections: true,
+  connectionLimit: Number(process.env.DB_CONNECTION_LIMIT || 10),
+  queueLimit: 50,
+  enableKeepAlive: true,
+  dateStrings: true
+});
 
 module.exports = pool;
