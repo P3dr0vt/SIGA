@@ -6,7 +6,15 @@ const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
 
 const SECRET = process.env.JWT_SECRET;
-if (!SECRET || SECRET.length < 32) throw new Error('JWT_SECRET deve possuir pelo menos 32 caracteres.');
+
+function jwtSecret() {
+  if (!SECRET || SECRET.length < 32) {
+    const error = new Error('Autenticacao nao configurada.');
+    error.code = 'JWT_NOT_CONFIGURED';
+    throw error;
+  }
+  return SECRET;
+}
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const DUMMY_HASH = '$2a$12$wIhIu91BMVNyfcv3Arz.U.WmB3xFJx0zKXlF8bXh4kPuFtQOFjVjG';
@@ -64,7 +72,7 @@ router.post('/login', async (req, res) => {
 
     if (usuario.primeiro_acesso === true) {
       const trocaToken = jwt.sign(
-        { sub: usuario.id_usuario, ver: usuario.token_version, finalidade: 'primeiro_acesso' }, SECRET,
+        { sub: usuario.id_usuario, ver: usuario.token_version, finalidade: 'primeiro_acesso' }, jwtSecret(),
         { expiresIn: '10m', issuer: 'gera', audience: 'gera-web' }
       );
       return res.json({ primeiro_acesso: true, troca_token: trocaToken, mensagem: 'Troca de senha obrigatoria.' });
@@ -76,7 +84,7 @@ router.post('/login', async (req, res) => {
       nome: usuario.nome,
       id_instrutor: usuario.id_instrutor_vinculado,
       ver: usuario.token_version
-    }, SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '8h', issuer: 'gera', audience: 'gera-web' });
+    }, jwtSecret(), { expiresIn: process.env.JWT_EXPIRES_IN || '8h', issuer: 'gera', audience: 'gera-web' });
 
     return res.json({ token, usuario: {
       nome: usuario.nome, perfil: usuario.perfil,
@@ -95,7 +103,7 @@ router.post('/trocar-senha', async (req, res) => {
     return res.status(400).json({ erro: 'Use 10 caracteres, com maiuscula, minuscula, numero e simbolo.' });
   }
   try {
-    const payload = jwt.verify(trocaToken, SECRET, { issuer: 'gera', audience: 'gera-web' });
+    const payload = jwt.verify(trocaToken, jwtSecret(), { issuer: 'gera', audience: 'gera-web' });
     if (payload.finalidade !== 'primeiro_acesso') return res.status(403).json({ erro: 'Token de troca invalido.' });
     const hash = await bcrypt.hash(novaSenha, 12);
     const [result] = await db.execute(
@@ -112,6 +120,40 @@ router.post('/trocar-senha', async (req, res) => {
     }
     console.error('Erro ao trocar senha:', error);
     return res.status(500).json({ erro: 'Erro ao alterar senha.' });
+  }
+});
+
+// Provisionamento inicial sem Node local. Remova ADMIN_BOOTSTRAP_TOKEN da Vercel apos o uso.
+router.post('/bootstrap-admin', async (req, res) => {
+  const configuredToken = process.env.ADMIN_BOOTSTRAP_TOKEN || '';
+  const receivedToken = req.headers['x-bootstrap-token'] || '';
+  if (configuredToken.length < 32 || typeof receivedToken !== 'string' || receivedToken.length !== configuredToken.length ||
+      !crypto.timingSafeEqual(Buffer.from(receivedToken), Buffer.from(configuredToken))) {
+    return res.status(404).json({ erro: 'Rota nao encontrada.' });
+  }
+
+  const email = normalizarEmail(req.body.email);
+  const nome = typeof req.body.nome === 'string' ? req.body.nome.trim() : '';
+  const senha = req.body.senha;
+  if (!email || nome.length < 2 || nome.length > 255 || !senhaForte(senha)) {
+    return res.status(400).json({ erro: 'Nome, e-mail ou senha fora da politica de seguranca.' });
+  }
+
+  try {
+    const hash = await bcrypt.hash(senha, 12);
+    await db.execute(
+      `INSERT INTO Usuarios (email, senha, nome, perfil, primeiro_acesso, ativo, senha_alterada_em)
+       VALUES (?, ?, ?, 'admin', FALSE, TRUE, NOW())
+       ON CONFLICT (email) DO UPDATE SET senha = EXCLUDED.senha, nome = EXCLUDED.nome,
+         perfil = 'admin', primeiro_acesso = FALSE, ativo = TRUE, tentativas_login = 0,
+         bloqueado_ate = NULL, senha_alterada_em = NOW(), token_version = Usuarios.token_version + 1`,
+      [email, hash, nome]
+    );
+    res.setHeader('Cache-Control', 'no-store');
+    return res.status(201).json({ mensagem: 'Administrador provisionado. Remova ADMIN_BOOTSTRAP_TOKEN agora.' });
+  } catch (error) {
+    console.error('Erro no provisionamento inicial:', error);
+    return res.status(500).json({ erro: 'Erro ao provisionar administrador.' });
   }
 });
 
@@ -148,7 +190,7 @@ async function autenticar(req, res, next) {
   const match = /^Bearer\s+([^\s]+)$/i.exec(req.headers.authorization || '');
   if (!match) return res.status(401).json({ erro: 'Token nao fornecido.' });
   try {
-    const user = jwt.verify(match[1], SECRET, { issuer: 'gera', audience: 'gera-web' });
+    const user = jwt.verify(match[1], jwtSecret(), { issuer: 'gera', audience: 'gera-web' });
     const [rows] = await db.execute(
       'SELECT ativo, token_version FROM Usuarios WHERE id_usuario = ? LIMIT 1',
       [user.id]

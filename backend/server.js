@@ -64,6 +64,16 @@ app.use(express.urlencoded({ extended: false, limit: '32kb' }));
 app.use(express.static(path.join(__dirname, '..', 'public')));
 
 // Rotas da API
+app.get('/api/health', (req, res) => {
+  const ausentes = [];
+  if (!process.env.DATABASE_URL) ausentes.push('DATABASE_URL');
+  if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) ausentes.push('JWT_SECRET');
+  if (ausentes.length > 0) {
+    return res.status(503).json({ status: 'configuracao_pendente', variaveis: ausentes });
+  }
+  return res.json({ status: 'ok' });
+});
+
 app.use('/api/auth/login', limitarLogin);
 app.use('/api/auth', auth);
 app.use('/api/instrutores', auth.autenticar, instrutoresRoutes);

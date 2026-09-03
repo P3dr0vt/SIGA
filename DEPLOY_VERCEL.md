@@ -25,13 +25,13 @@ pnpm convert-backup -- D:\GERA\backup.sql
 
 Aplique `database/siga_final.sql` no SQL Editor do Supabase. Depois aplique, sem versionar, `database/private/002_import_data.sql`. Todas as senhas importadas foram substituidas por hashes aleatorios; nenhuma senha do backup e reutilizada. O conversor se recusa a sobrescrever uma importacao existente por seguranca.
 
-Para recriar o acesso administrativo, configure temporariamente `ADMIN_EMAIL`, `ADMIN_PASSWORD` e `ADMIN_NAME` em um ambiente local seguro e execute:
+Para recriar o acesso administrativo sem instalar Node localmente:
 
 ```text
-pnpm create-admin
+.\scripts\bootstrap-admin.ps1 -Url https://seu-projeto.vercel.app
 ```
 
-Remova `ADMIN_PASSWORD` do ambiente assim que o comando terminar. Execute o comando na raiz do projeto.
+O script solicita os segredos sem grava-los no historico do PowerShell. Antes de executa-lo, cadastre temporariamente `ADMIN_BOOTSTRAP_TOKEN` na Vercel com uma chave aleatoria de pelo menos 32 caracteres e faca um redeploy. Assim que receber a confirmacao, remova essa variavel da Vercel e redeploy novamente; isso desativa a rota.
 
 As demais contas devem receber uma nova senha temporaria pela rota administrativa `POST /api/auth/usuarios/:id/resetar-senha`. A resposta nao deve ser registrada em logs e deve ser entregue diretamente ao titular. A troca no primeiro acesso revoga a credencial temporaria e as sessoes anteriores.
 

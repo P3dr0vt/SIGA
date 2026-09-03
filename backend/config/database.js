@@ -1,9 +1,8 @@
 const { Pool } = require('pg');
 
 const connectionString = process.env.DATABASE_URL;
-if (!connectionString) throw new Error('DATABASE_URL nao configurada.');
 
-const pool = new Pool({
+const pool = connectionString ? new Pool({
   connectionString,
   max: Number(process.env.DB_POOL_MAX || 5),
   idleTimeoutMillis: 10_000,
@@ -11,7 +10,16 @@ const pool = new Pool({
   ssl: process.env.DB_SSL === 'false'
     ? false
     : { rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false' }
-});
+}) : null;
+
+function exigirPool() {
+  if (!pool) {
+    const error = new Error('Banco de dados nao configurado.');
+    error.code = 'DATABASE_NOT_CONFIGURED';
+    throw error;
+  }
+  return pool;
+}
 
 function postgresSql(sql) {
   let index = 0;
@@ -34,11 +42,11 @@ async function executeWith(client, sql, params = []) {
 }
 
 async function execute(sql, params = []) {
-  return executeWith(pool, sql, params);
+  return executeWith(exigirPool(), sql, params);
 }
 
 async function getConnection() {
-  const client = await pool.connect();
+  const client = await exigirPool().connect();
   return {
     execute: (sql, params = []) => executeWith(client, sql, params),
     beginTransaction: () => client.query('BEGIN'),
@@ -48,4 +56,9 @@ async function getConnection() {
   };
 }
 
-module.exports = { execute, getConnection, end: () => pool.end() };
+module.exports = {
+  execute,
+  getConnection,
+  end: () => pool ? pool.end() : Promise.resolve(),
+  configurado: () => Boolean(pool)
+};
