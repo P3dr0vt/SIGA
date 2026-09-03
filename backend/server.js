@@ -16,8 +16,17 @@ const PORT = process.env.PORT || 3000;
 app.disable('x-powered-by');
 app.set('trust proxy', 1);
 
+function normalizarOrigem(valor) {
+  if (typeof valor !== 'string' || !valor.trim()) return null;
+  try {
+    return new URL(valor.trim()).origin;
+  } catch {
+    return null;
+  }
+}
+
 const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
-  .split(',').map((item) => item.trim()).filter(Boolean);
+  .split(',').map(normalizarOrigem).filter(Boolean);
 const loginAttempts = new Map();
 
 function securityHeaders(req, res, next) {
@@ -51,13 +60,21 @@ function limitarLogin(req, res, next) {
 app.use(securityHeaders);
 app.use(cors({
   origin(origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
-    return callback(new Error('Origem nao autorizada.'));
+    if (!origin || allowedOrigins.includes(normalizarOrigem(origin))) return callback(null, true);
+    const error = new Error('Origem nao autorizada.');
+    error.code = 'ORIGIN_NOT_ALLOWED';
+    return callback(error);
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   maxAge: 86400
 }));
+app.use((error, req, res, next) => {
+  if (error.code === 'ORIGIN_NOT_ALLOWED') {
+    return res.status(403).json({ erro: 'Origem nao autorizada.' });
+  }
+  return next(error);
+});
 app.use(express.json({ limit: '32kb' }));
 app.use(express.urlencoded({ extended: false, limit: '32kb' }));
 
