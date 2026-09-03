@@ -1,7 +1,6 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
-const { autenticar } = require('./auth');
 
 // Listar todas
 router.get('/', async (req, res) => {
@@ -9,7 +8,8 @@ router.get('/', async (req, res) => {
     const [rows] = await db.execute('SELECT * FROM Salas ORDER BY bloco, nome');
     res.json(rows);
   } catch (error) {
-    res.status(500).json({ erro: error.message });
+    console.error('Erro ao listar salas:', error);
+    res.status(500).json({ erro: 'Erro ao listar salas.' });
   }
 });
 
@@ -21,10 +21,11 @@ router.post('/', async (req, res) => {
 
   const { nome, bloco, tipo } = req.body;
   try {
-    const [result] = await db.execute('INSERT INTO Salas (nome, bloco, tipo) VALUES (?, ?, ?)', [nome, bloco, tipo || 'SALA']);
+    const [result] = await db.execute('INSERT INTO Salas (nome, bloco, tipo) VALUES (?, ?, ?) RETURNING id_sala', [nome, bloco, tipo || 'SALA']);
     res.status(201).json({ id: result.insertId, mensagem: 'Sala criada!' });
   } catch (error) {
-    res.status(500).json({ erro: error.message });
+    console.error('Erro ao criar sala:', error);
+    res.status(500).json({ erro: 'Erro ao criar sala.' });
   }
 });
 
@@ -38,7 +39,8 @@ router.delete('/:id', async (req, res) => {
     await db.execute('DELETE FROM Salas WHERE id_sala = ?', [req.params.id]);
     res.json({ mensagem: 'Sala removida com sucesso!' });
   } catch (error) {
-    res.status(500).json({ erro: error.message });
+    console.error('Erro ao remover sala:', error);
+    res.status(500).json({ erro: 'Erro ao remover sala.' });
   }
 });
 

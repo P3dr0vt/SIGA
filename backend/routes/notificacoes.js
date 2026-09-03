@@ -9,12 +9,13 @@ router.get('/', async (req, res) => {
   }
   try {
     const [rows] = await db.execute(
-      'SELECT * FROM Notificacoes WHERE id_instrutor = ? AND lida = 0 ORDER BY data_criacao DESC',
+      'SELECT * FROM Notificacoes WHERE id_instrutor = ? AND lida = FALSE ORDER BY data_criacao DESC',
       [req.usuario.id_instrutor]
     );
     res.json(rows);
   } catch (error) {
-    res.status(500).json({ erro: error.message });
+    console.error('Erro ao listar notificacoes:', error);
+    res.status(500).json({ erro: 'Erro ao listar notificacoes.' });
   }
 });
 
@@ -25,13 +26,14 @@ router.put('/:id/lida', async (req, res) => {
   }
   try {
     const [result] = await db.execute(
-      'UPDATE Notificacoes SET lida = 1 WHERE id_notificacao = ? AND id_instrutor = ?',
+      'UPDATE Notificacoes SET lida = TRUE WHERE id_notificacao = ? AND id_instrutor = ?',
       [req.params.id, req.usuario.id_instrutor]
     );
     if (result.affectedRows === 0) return res.status(404).json({ erro: 'Notificacao nao encontrada.' });
     res.json({ mensagem: 'Notificação marcada como lida.' });
   } catch (error) {
-    res.status(500).json({ erro: error.message });
+    console.error('Erro ao atualizar notificacao:', error);
+    res.status(500).json({ erro: 'Erro ao atualizar notificacao.' });
   }
 });
 
@@ -48,7 +50,8 @@ router.delete('/instrutor/:id_instrutor', async (req, res) => {
     );
     res.json({ mensagem: 'Notificações deletadas com sucesso.' });
   } catch (error) {
-    res.status(500).json({ erro: error.message });
+    console.error('Erro ao remover notificacoes:', error);
+    res.status(500).json({ erro: 'Erro ao remover notificacoes.' });
   }
 });
 

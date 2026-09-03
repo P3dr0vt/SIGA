@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 
 // GET / - Listar todos
 router.get('/', async (req, res) => {
@@ -9,7 +10,8 @@ router.get('/', async (req, res) => {
     const [rows] = await db.execute('SELECT * FROM Instrutores ORDER BY nome');
     res.json(rows);
   } catch (error) {
-    res.status(500).json({ erro: error.message });
+    console.error('Erro ao listar instrutores:', error);
+    res.status(500).json({ erro: 'Erro ao listar instrutores.' });
   }
 });
 
@@ -31,10 +33,12 @@ router.post('/', async (req, res) => {
     let matricula = matriculaEntrada ? String(matriculaEntrada).trim() : null;
     if (matricula) {
       if (!/^[0-9]+$/.test(matricula)) {
+        await connection.rollback();
         return res.status(400).json({ erro: 'A matrícula deve conter apenas números.' });
       }
       const [existeMat] = await connection.execute('SELECT id_instrutor FROM Instrutores WHERE matricula = ?', [matricula]);
       if (existeMat.length > 0) {
+        await connection.rollback();
         return res.status(400).json({ erro: 'Esta matrícula já está em uso.' });
       }
     }
@@ -55,13 +59,13 @@ router.post('/', async (req, res) => {
     }
 
     const [result] = await connection.execute(
-      'INSERT INTO Instrutores (nome, matricula) VALUES (?, ?)',
+      'INSERT INTO Instrutores (nome, matricula) VALUES (?, ?) RETURNING id_instrutor',
       [nome.trim(), matricula]
     );
     const id_instrutor = result.insertId;
 
     const email = `${matricula}@senai.com`;
-    const senhaPadrao = matricula; // Entregue uma unica vez ao administrador.
+    const senhaPadrao = `${crypto.randomBytes(9).toString('base64url')}Aa1!`;
     const senhaHash = await bcrypt.hash(senhaPadrao, 12);
 
     const [emailExiste] = await connection.execute('SELECT id_usuario FROM Usuarios WHERE email = ?', [email]);
@@ -72,7 +76,7 @@ router.post('/', async (req, res) => {
 
     await connection.execute(
       'INSERT INTO Usuarios (email, senha, nome, perfil, primeiro_acesso, id_instrutor_vinculado) VALUES (?, ?, ?, ?, ?, ?)',
-      [email, senhaHash, nome.trim(), 'instrutor', 1, id_instrutor]
+      [email, senhaHash, nome.trim(), 'instrutor', true, id_instrutor]
     );
 
     await connection.commit();
@@ -90,7 +94,7 @@ router.post('/', async (req, res) => {
   } catch (error) {
     await connection.rollback();
     console.error('Erro ao criar instrutor:', error);
-    res.status(500).json({ erro: error.message });
+    res.status(500).json({ erro: 'Erro ao criar instrutor.' });
   } finally {
     connection.release();
   }
@@ -108,7 +112,8 @@ router.delete('/:id', async (req, res) => {
     await db.execute('DELETE FROM Usuarios WHERE id_instrutor_vinculado = ?', [req.params.id]);
     res.json({ mensagem: 'Instrutor removido.' });
   } catch (error) {
-    res.status(500).json({ erro: error.message });
+    console.error('Erro ao remover instrutor:', error);
+    res.status(500).json({ erro: 'Erro ao remover instrutor.' });
   }
 });
 

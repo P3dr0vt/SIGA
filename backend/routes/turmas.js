@@ -71,11 +71,11 @@ router.post('/', async (req, res) => {
   }
 
   try {
-    const [result] = await db.execute('INSERT INTO Turmas (nome, turno) VALUES (?, ?)', [nome.trim(), turnoFinal]);
+    const [result] = await db.execute('INSERT INTO Turmas (nome, turno) VALUES (?, ?) RETURNING id_turma', [nome.trim(), turnoFinal]);
     res.status(201).json({ mensagem: 'Turma adicionada com sucesso.', id: result.insertId });
   } catch (error) {
     console.error('Erro ao criar turma:', error);
-    if (error.code === 'ER_DUP_ENTRY') {
+    if (error.code === '23505') {
       return res.status(400).json({ erro: 'Já existe uma turma com este nome neste turno.' });
     }
     res.status(500).json({ erro: 'Erro ao adicionar turma.' });
@@ -103,7 +103,7 @@ router.put('/:id', async (req, res) => {
     res.json({ mensagem: 'Turma atualizada com sucesso.' });
   } catch (error) {
     console.error('Erro ao atualizar turma:', error);
-    if (error.code === 'ER_DUP_ENTRY') {
+    if (error.code === '23505') {
       return res.status(400).json({ erro: 'Já existe uma turma com este nome neste turno.' });
     }
     res.status(500).json({ erro: 'Erro ao atualizar turma.' });

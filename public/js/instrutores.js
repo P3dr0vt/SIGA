@@ -106,9 +106,11 @@ async function adicionarInstrutor() {
     if (response.ok) {
       fecharModal('modalAdicionar');
       carregarInstrutores();
+      if (data.acesso) {
+        alert(`Instrutor criado.\n\nLogin: ${data.acesso.matricula}\nSenha temporária: ${data.acesso.senha}\n\nEsta senha será exibida somente agora.`);
+      }
     } else {
       alert(data.erro || 'Erro ao salvar.');
     }
   } catch (e) { alert('Erro ao salvar.'); }
 }
-

@@ -6,7 +6,7 @@ Sistema de gestao de ambientes educacionais do SENAI. Supervisores podem adminis
 
 O frontend e uma aplicacao HTML, CSS e JavaScript sem framework. A API usa Node.js e Express.
 
-O backend atual ainda utiliza o driver MySQL. Antes da publicacao com Supabase, a camada de banco e o schema precisam ser migrados para PostgreSQL. A configuracao da Vercel ja existe, mas o deploy de producao so deve ser feito depois dessa migracao e dos testes de seguranca.
+O backend utiliza PostgreSQL e esta preparado para a conexao serverless do Supabase. O dump MySQL original e convertido localmente; dados reais e senhas nunca sao versionados.
 
 ## Estrutura
 
@@ -15,13 +15,13 @@ backend/
   config/            conexao com o banco
   routes/            endpoints da API
   scripts/           tarefas administrativas
-database/            schema legado MySQL, temporariamente mantido para migracao
+database/            schema PostgreSQL versionado; dados reais ficam em private/
 public/               arquivos publicados pela CDN da Vercel
   css/               estilos
   js/                comportamento das telas
   pages/             telas de gestao
 Dockerfile           imagem para futura infraestrutura local
-docker-compose.yml   ambiente local com MySQL e nginx
+docker-compose.yml   ambiente local com PostgreSQL e nginx
 nginx.conf           proxy do ambiente local
 vercel.json          configuracao do deploy serverless
 ```
@@ -30,8 +30,8 @@ vercel.json          configuracao do deploy serverless
 
 1. Instale uma versao LTS atual do Node.js.
 2. Copie `.env.example` para `.env` e use apenas credenciais de desenvolvimento.
-3. Na raiz do projeto, execute `npm ci`.
-4. Execute `npm run check` e depois `npm start`.
+3. Na raiz do projeto, execute `pnpm install --frozen-lockfile`.
+4. Execute `pnpm check` e depois `pnpm start`.
 
 O arquivo `.env` nunca deve ser enviado ao repositorio.
 
@@ -51,4 +51,4 @@ O arquivo `.env` nunca deve ser enviado ao repositorio.
 
 ## Publicacao
 
-Consulte [DEPLOY_VERCEL.md](DEPLOY_VERCEL.md). A proxima etapa tecnica obrigatoria e migrar o banco para PostgreSQL/Supabase.
+Consulte [DEPLOY_VERCEL.md](DEPLOY_VERCEL.md). Aplique primeiro o schema e depois o arquivo de importacao privado gerado a partir do backup.

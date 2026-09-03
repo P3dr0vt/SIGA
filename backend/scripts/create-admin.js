@@ -14,8 +14,10 @@ async function main() {
   const hash = await bcrypt.hash(senha, 12);
   await db.execute(
     `INSERT INTO Usuarios (email, senha, nome, perfil, primeiro_acesso)
-     VALUES (?, ?, ?, 'admin', 0)
-     ON DUPLICATE KEY UPDATE senha = VALUES(senha), nome = VALUES(nome), perfil = 'admin', primeiro_acesso = 0`,
+     VALUES (?, ?, ?, 'admin', FALSE)
+     ON CONFLICT (email) DO UPDATE SET senha = EXCLUDED.senha, nome = EXCLUDED.nome, perfil = 'admin',
+       primeiro_acesso = FALSE, ativo = TRUE, tentativas_login = 0, bloqueado_ate = NULL,
+       senha_alterada_em = NOW(), token_version = Usuarios.token_version + 1`,
     [email, hash, nome]
   );
   console.log('Conta administrativa criada ou atualizada com seguranca.');

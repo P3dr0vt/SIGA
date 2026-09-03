@@ -5,10 +5,10 @@ FROM node:20-alpine
 WORKDIR /app
 
 # Copia dependências primeiro (aproveita cache do Docker)
-COPY package*.json ./
+COPY package.json pnpm-lock.yaml ./
 
 # Instala dependências de produção
-RUN npm ci --omit=dev
+RUN corepack enable && pnpm install --frozen-lockfile --prod
 
 # Copia o código do backend e do frontend
 COPY backend/ ./backend/

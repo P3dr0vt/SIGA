@@ -139,7 +139,7 @@ router.get('/', async (req, res) => {
     res.json(rows);
   } catch (error) {
     console.error('Erro ao listar alocações:', error);
-    res.status(500).json({ erro: error.message });
+    res.status(500).json({ erro: 'Erro ao listar alocacoes.' });
   }
 });
 
@@ -157,7 +157,7 @@ router.get('/ocupadas/:id_sala', async (req, res) => {
     `, [req.params.id_sala]);
     res.json(rows);
   } catch (error) {
-    res.status(500).json({ erro: error.message });
+    res.status(500).json({ erro: 'Erro ao consultar ocupacao.' });
   }
 });
 
@@ -253,7 +253,7 @@ router.post('/', async (req, res) => {
     res.status(201).json({ mensagem: 'Alocação realizada com sucesso!' });
   } catch (error) {
     console.error('Erro ao criar alocação:', error);
-    res.status(500).json({ erro: error.message });
+    res.status(500).json({ erro: 'Erro ao criar alocacao.' });
   }
 });
 
@@ -299,7 +299,7 @@ router.put('/:id', async (req, res) => {
     res.json({ mensagem: 'Alocação atualizada com sucesso!' });
   } catch (error) {
     console.error('Erro ao atualizar alocação:', error);
-    res.status(500).json({ erro: error.message });
+    res.status(500).json({ erro: 'Erro ao atualizar alocacao.' });
   }
 });
 
@@ -320,7 +320,8 @@ router.delete('/:id', async (req, res) => {
     await db.execute('DELETE FROM Alocacoes WHERE id_alocacao = ?', [req.params.id]);
     res.json({ mensagem: 'Alocação removida.' });
   } catch (error) {
-    res.status(500).json({ erro: error.message });
+    console.error('Erro ao remover alocacao:', error);
+    res.status(500).json({ erro: 'Erro ao remover alocacao.' });
   }
 });
 

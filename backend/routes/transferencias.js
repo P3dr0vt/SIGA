@@ -199,7 +199,7 @@ router.post('/', async (req, res) => {
     res.status(201).json({ mensagem: 'Solicitação de transferência criada com sucesso!' });
   } catch (error) {
     console.error('Erro ao criar transferência:', error);
-    res.status(500).json({ erro: error.message });
+    res.status(500).json({ erro: 'Erro ao criar transferencia.' });
   }
 });
 
@@ -228,7 +228,7 @@ router.get('/', async (req, res) => {
     res.json(rows);
   } catch (error) {
     console.error('Erro ao listar transferências:', error);
-    res.status(500).json({ erro: error.message });
+    res.status(500).json({ erro: 'Erro ao listar transferencias.' });
   }
 });
 
@@ -257,7 +257,7 @@ router.get('/:id', async (req, res) => {
     res.json(rows[0]);
   } catch (error) {
     console.error('Erro ao buscar transferência:', error);
-    res.status(500).json({ erro: error.message });
+    res.status(500).json({ erro: 'Erro ao buscar transferencia.' });
   }
 });
 
@@ -499,7 +499,7 @@ router.put('/:id/aceitar', async (req, res) => {
   } catch (error) {
     await connection.rollback();
     console.error('Erro ao aceitar transferência:', error);
-    res.status(500).json({ erro: error.message });
+    res.status(500).json({ erro: 'Erro ao aceitar transferencia.' });
   } finally {
     connection.release();
   }
@@ -553,7 +553,7 @@ router.put('/:id/rejeitar', async (req, res) => {
     res.json({ mensagem: 'Transferência rejeitada.' });
   } catch (error) {
     console.error('Erro ao rejeitar transferência:', error);
-    res.status(500).json({ erro: error.message });
+    res.status(500).json({ erro: 'Erro ao rejeitar transferencia.' });
   }
 });
 

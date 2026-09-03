@@ -1,17 +1,19 @@
 {
   "name": "siga-backend",
   "version": "1.0.0",
+  "packageManager": "pnpm@11.19.0",
   "description": "Sistema Integrado de Gestão de Alocação - Backend",
   "main": "index.js",
   "scripts": {
     "start": "node backend/server.js",
     "dev": "node backend/server.js",
     "check": "node --check index.js && node --check backend/server.js && node --check backend/routes/auth.js",
-    "create-admin": "node backend/scripts/create-admin.js"
+    "create-admin": "node backend/scripts/create-admin.js",
+    "convert-backup": "node scripts/convert-backup.js"
   },
   "dependencies": {
     "express": "^4.18.2",
-    "mysql2": "^3.6.5",
+    "pg": "^8.16.3",
     "cors": "^2.8.5",
     "bcryptjs": "^2.4.3",
     "jsonwebtoken": "^9.0.2"

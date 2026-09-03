@@ -2,17 +2,18 @@ version: '3.8'
 
 services:
   db:
-    image: mysql:8.0
+    image: postgres:16-alpine
     container_name: gera-db
     restart: unless-stopped
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Defina MYSQL_ROOT_PASSWORD no arquivo .env local}
-      MYSQL_DATABASE: ${DB_NAME:-siga_db}
+      POSTGRES_USER: gera
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no arquivo .env local}
+      POSTGRES_DB: gera
     volumes:
-      - db_data:/var/lib/mysql
+      - postgres_data:/var/lib/postgresql/data
       - ./database/siga_final.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
-      test: ["CMD-SHELL", "MYSQL_PWD=$$MYSQL_ROOT_PASSWORD mysqladmin ping -h localhost -u root --silent"]
+      test: ["CMD-SHELL", "pg_isready -U gera -d gera"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -28,10 +29,8 @@ services:
         condition: service_healthy
     environment:
       PORT: 3000
-      DB_HOST: db
-      DB_USER: root
-      DB_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Defina MYSQL_ROOT_PASSWORD no arquivo .env local}
-      DB_NAME: ${DB_NAME:-siga_db}
+      DATABASE_URL: postgresql://gera:${POSTGRES_PASSWORD:?Defina POSTGRES_PASSWORD no arquivo .env local}@db:5432/gera
+      DB_SSL: "false"
       JWT_SECRET: ${JWT_SECRET:?Defina JWT_SECRET no arquivo .env local}
       JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-8h}
       ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:8080}
@@ -52,7 +51,7 @@ services:
       - gera-network
 
 volumes:
-  db_data:
+  postgres_data:
 
 networks:
   gera-network:

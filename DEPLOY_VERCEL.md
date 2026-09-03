@@ -1,6 +1,6 @@
 # Publicacao segura na Vercel com Supabase
 
-> Estado atual: o backend ainda usa MySQL e nao deve ser conectado diretamente ao Supabase. O Supabase fornece PostgreSQL; primeiro migre o schema, as consultas e o driver da aplicacao.
+> O backend usa PostgreSQL. Na Vercel, utilize a URL do Transaction pooler do Supabase (porta 6543).
 
 ## Antes de publicar
 
@@ -11,23 +11,33 @@
 
 ## Variaveis na Vercel
 
-Depois da migracao para PostgreSQL, cadastre as variaveis indicadas em `.env.example` em **Project Settings > Environment Variables**. Nunca envie um arquivo `.env` ao Git. Em `ALLOWED_ORIGINS`, informe exatamente o dominio de producao, sem barra no final.
+Cadastre as variaveis indicadas em `.env.example` em **Project Settings > Environment Variables**. Nunca envie um arquivo `.env` ao Git. Em `ALLOWED_ORIGINS`, informe exatamente o dominio de producao, sem barra no final.
 
 Gere `JWT_SECRET` com um gerador criptograficamente seguro e use pelo menos 32 bytes aleatorios. Nao reutilize senha humana.
 
 ## Banco e primeira conta
 
-Nao importe `database/siga_final.sql` no Supabase: esse arquivo ainda usa sintaxe MySQL. A migracao devera gerar um schema PostgreSQL proprio. Depois disso, para criar a primeira conta administrativa, configure temporariamente `ADMIN_EMAIL`, `ADMIN_PASSWORD` e `ADMIN_NAME` em um ambiente local seguro e execute, dentro de `backend`:
+Converta o backup local sem coloca-lo no repositorio:
 
 ```text
-npm run create-admin
+pnpm convert-backup -- D:\GERA\backup.sql
+```
+
+Aplique `database/siga_final.sql` no SQL Editor do Supabase. Depois aplique, sem versionar, `database/private/002_import_data.sql`. Todas as senhas importadas foram substituidas por hashes aleatorios; nenhuma senha do backup e reutilizada. O conversor se recusa a sobrescrever uma importacao existente por seguranca.
+
+Para recriar o acesso administrativo, configure temporariamente `ADMIN_EMAIL`, `ADMIN_PASSWORD` e `ADMIN_NAME` em um ambiente local seguro e execute:
+
+```text
+pnpm create-admin
 ```
 
 Remova `ADMIN_PASSWORD` do ambiente assim que o comando terminar. Execute o comando na raiz do projeto.
 
+As demais contas devem receber uma nova senha temporaria pela rota administrativa `POST /api/auth/usuarios/:id/resetar-senha`. A resposta nao deve ser registrada em logs e deve ser entregue diretamente ao titular. A troca no primeiro acesso revoga a credencial temporaria e as sessoes anteriores.
+
 ## Validacoes finais
 
-- Execute `npm ci` e `npm run check` na raiz do projeto.
+- Execute `pnpm install --frozen-lockfile` e `pnpm check` na raiz do projeto.
 - Teste login, primeiro acesso, expiracao da sessao e cada operacao com perfis admin, instrutor e TV.
 - Rode uma analise de dependencias e um scanner DAST contra um ambiente de homologacao.
 - Confira os logs sem dados pessoais e habilite alertas de erros e tentativas excessivas de login.

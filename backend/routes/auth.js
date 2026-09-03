@@ -3,6 +3,7 @@ const router = express.Router();
 const db = require('../config/database');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 
 const SECRET = process.env.JWT_SECRET;
 if (!SECRET || SECRET.length < 32) throw new Error('JWT_SECRET deve possuir pelo menos 32 caracteres.');
@@ -31,26 +32,39 @@ router.post('/login', async (req, res) => {
 
   try {
     const [rows] = await db.execute(
-      'SELECT id_usuario, email, senha, nome, perfil, primeiro_acesso, id_instrutor_vinculado FROM Usuarios WHERE email = ? LIMIT 1',
+      `SELECT id_usuario, email, senha, nome, perfil, primeiro_acesso,
+              id_instrutor_vinculado, ativo, tentativas_login, bloqueado_ate, token_version
+       FROM Usuarios WHERE email = ? LIMIT 1`,
       [email]
     );
     const usuario = rows[0];
-    const hashArmazenado = usuario && /^\$2[aby]\$/.test(usuario.senha);
-    const senhaValida = hashArmazenado
-      ? await bcrypt.compare(senha, usuario.senha)
-      : usuario ? senha === usuario.senha : await bcrypt.compare(senha, DUMMY_HASH);
+    if (usuario && (!usuario.ativo || (usuario.bloqueado_ate && new Date(usuario.bloqueado_ate) > new Date()))) {
+      return res.status(429).json({ erro: 'Conta temporariamente indisponivel. Tente mais tarde.' });
+    }
+    const hashArmazenado = usuario && /^\$2[aby]\$/.test(usuario.senha) ? usuario.senha : DUMMY_HASH;
+    const senhaValida = await bcrypt.compare(senha, hashArmazenado);
 
-    if (!usuario || !senhaValida) return res.status(401).json({ erro: 'E-mail/matricula ou senha incorretos.' });
-
-    // Compatibilidade controlada: converte a senha legada em hash no primeiro login valido.
-    if (!hashArmazenado) {
-      const hash = await bcrypt.hash(senha, 12);
-      await db.execute('UPDATE Usuarios SET senha = ? WHERE id_usuario = ?', [hash, usuario.id_usuario]);
+    if (!usuario || !senhaValida) {
+      if (usuario) {
+        await db.execute(
+          `UPDATE Usuarios
+           SET tentativas_login = LEAST(tentativas_login + 1, 20),
+               bloqueado_ate = CASE WHEN tentativas_login + 1 >= 5 THEN NOW() + INTERVAL '15 minutes' ELSE bloqueado_ate END
+           WHERE id_usuario = ?`,
+          [usuario.id_usuario]
+        );
+      }
+      return res.status(401).json({ erro: 'E-mail/matricula ou senha incorretos.' });
     }
 
-    if (usuario.primeiro_acesso === 1) {
+    await db.execute(
+      'UPDATE Usuarios SET tentativas_login = 0, bloqueado_ate = NULL WHERE id_usuario = ?',
+      [usuario.id_usuario]
+    );
+
+    if (usuario.primeiro_acesso === true) {
       const trocaToken = jwt.sign(
-        { sub: usuario.id_usuario, finalidade: 'primeiro_acesso' }, SECRET,
+        { sub: usuario.id_usuario, ver: usuario.token_version, finalidade: 'primeiro_acesso' }, SECRET,
         { expiresIn: '10m', issuer: 'gera', audience: 'gera-web' }
       );
       return res.json({ primeiro_acesso: true, troca_token: trocaToken, mensagem: 'Troca de senha obrigatoria.' });
@@ -60,7 +74,8 @@ router.post('/login', async (req, res) => {
       id: usuario.id_usuario,
       perfil: usuario.perfil,
       nome: usuario.nome,
-      id_instrutor: usuario.id_instrutor_vinculado
+      id_instrutor: usuario.id_instrutor_vinculado,
+      ver: usuario.token_version
     }, SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '8h', issuer: 'gera', audience: 'gera-web' });
 
     return res.json({ token, usuario: {
@@ -84,8 +99,10 @@ router.post('/trocar-senha', async (req, res) => {
     if (payload.finalidade !== 'primeiro_acesso') return res.status(403).json({ erro: 'Token de troca invalido.' });
     const hash = await bcrypt.hash(novaSenha, 12);
     const [result] = await db.execute(
-      'UPDATE Usuarios SET senha = ?, primeiro_acesso = 0 WHERE id_usuario = ? AND primeiro_acesso = 1',
-      [hash, payload.sub]
+      `UPDATE Usuarios SET senha = ?, primeiro_acesso = FALSE, senha_alterada_em = NOW(),
+                           token_version = token_version + 1, tentativas_login = 0, bloqueado_ate = NULL
+       WHERE id_usuario = ? AND primeiro_acesso = TRUE AND token_version = ?`,
+      [hash, payload.sub, payload.ver]
     );
     if (result.affectedRows === 0) return res.status(403).json({ erro: 'Token ja utilizado ou invalido.' });
     return res.json({ mensagem: 'Senha alterada. Faca login novamente.' });
@@ -98,14 +115,52 @@ router.post('/trocar-senha', async (req, res) => {
   }
 });
 
-function autenticar(req, res, next) {
+// Redefinicao administrativa: a senha temporaria e exibida uma unica vez.
+router.post('/usuarios/:id/resetar-senha', autenticar, async (req, res) => {
+  if (!req.usuario || req.usuario.perfil !== 'admin') {
+    return res.status(403).json({ erro: 'Apenas administradores podem redefinir senhas.' });
+  }
+
+  const idUsuario = Number(req.params.id);
+  if (!Number.isInteger(idUsuario) || idUsuario <= 0) {
+    return res.status(400).json({ erro: 'Usuario invalido.' });
+  }
+
+  const senhaTemporaria = `${crypto.randomBytes(9).toString('base64url')}Aa1!`;
+  try {
+    const hash = await bcrypt.hash(senhaTemporaria, 12);
+    const [result] = await db.execute(
+      `UPDATE Usuarios SET senha = ?, primeiro_acesso = TRUE, senha_alterada_em = NOW(),
+                           token_version = token_version + 1, tentativas_login = 0, bloqueado_ate = NULL
+       WHERE id_usuario = ?`,
+      [hash, idUsuario]
+    );
+    if (result.affectedRows === 0) return res.status(404).json({ erro: 'Usuario nao encontrado.' });
+    res.setHeader('Cache-Control', 'no-store');
+    return res.json({ senha_temporaria: senhaTemporaria });
+  } catch (error) {
+    console.error('Erro ao redefinir senha:', error);
+    return res.status(500).json({ erro: 'Erro ao redefinir senha.' });
+  }
+});
+
+async function autenticar(req, res, next) {
   const match = /^Bearer\s+([^\s]+)$/i.exec(req.headers.authorization || '');
   if (!match) return res.status(401).json({ erro: 'Token nao fornecido.' });
-  return jwt.verify(match[1], SECRET, { issuer: 'gera', audience: 'gera-web' }, (err, user) => {
-    if (err) return res.status(403).json({ erro: 'Token invalido ou expirado.' });
+  try {
+    const user = jwt.verify(match[1], SECRET, { issuer: 'gera', audience: 'gera-web' });
+    const [rows] = await db.execute(
+      'SELECT ativo, token_version FROM Usuarios WHERE id_usuario = ? LIMIT 1',
+      [user.id]
+    );
+    if (!rows[0] || !rows[0].ativo || rows[0].token_version !== user.ver) {
+      return res.status(403).json({ erro: 'Sessao revogada.' });
+    }
     req.usuario = user;
     return next();
-  });
+  } catch (error) {
+    return res.status(403).json({ erro: 'Token invalido ou expirado.' });
+  }
 }
 
 module.exports = router;
