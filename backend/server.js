@@ -100,6 +100,7 @@ app.get('/api/health', async (req, res) => {
       ENOTFOUND: 'endereco_do_banco',
       ECONNREFUSED: 'conexao_recusada',
       ETIMEDOUT: 'tempo_de_conexao',
+      INVALID_SSL_CA: 'configuracao_certificado_tls',
       SELF_SIGNED_CERT_IN_CHAIN: 'certificado_tls',
       DEPTH_ZERO_SELF_SIGNED_CERT: 'certificado_tls',
       UNABLE_TO_VERIFY_LEAF_SIGNATURE: 'certificado_tls'

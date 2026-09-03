@@ -1,18 +1,58 @@
 const { Pool } = require('pg');
 
 const connectionString = process.env.DATABASE_URL;
+const sslAtivo = process.env.DB_SSL !== 'false';
+const validarCertificado = process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false';
 
-const pool = connectionString ? new Pool({
-  connectionString,
+function connectionStringSemParametrosSsl(valor) {
+  if (!valor || !sslAtivo) return valor;
+  try {
+    const url = new URL(valor);
+    // O node-postgres substitui o objeto `ssl` quando estes parametros estao na URL.
+    // A configuracao TLS abaixo deve ser a unica fonte para que a CA nao seja ignorada.
+    ['sslmode', 'sslcert', 'sslkey', 'sslrootcert'].forEach((nome) => url.searchParams.delete(nome));
+    return url.toString();
+  } catch {
+    return valor;
+  }
+}
+
+function criarConfiguracaoSsl() {
+  if (!sslAtivo) return false;
+
+  const configuracao = { rejectUnauthorized: validarCertificado };
+  const caBase64 = (process.env.DB_SSL_CA_BASE64 || '').trim();
+  if (!caBase64) return configuracao;
+
+  const certificado = Buffer.from(caBase64, 'base64').toString('utf8').trim();
+  if (!certificado.includes('-----BEGIN CERTIFICATE-----') ||
+      !certificado.includes('-----END CERTIFICATE-----')) {
+    const error = new Error('Certificado TLS configurado em formato invalido.');
+    error.code = 'INVALID_SSL_CA';
+    throw error;
+  }
+  configuracao.ca = certificado;
+  return configuracao;
+}
+
+let erroConfiguracao = null;
+let ssl;
+try {
+  ssl = criarConfiguracaoSsl();
+} catch (error) {
+  erroConfiguracao = error;
+}
+
+const pool = connectionString && !erroConfiguracao ? new Pool({
+  connectionString: connectionStringSemParametrosSsl(connectionString),
   max: Number(process.env.DB_POOL_MAX || 5),
   idleTimeoutMillis: 10_000,
   connectionTimeoutMillis: 8_000,
-  ssl: process.env.DB_SSL === 'false'
-    ? false
-    : { rejectUnauthorized: process.env.DB_SSL_REJECT_UNAUTHORIZED !== 'false' }
+  ssl
 }) : null;
 
 function exigirPool() {
+  if (erroConfiguracao) throw erroConfiguracao;
   if (!pool) {
     const error = new Error('Banco de dados nao configurado.');
     error.code = 'DATABASE_NOT_CONFIGURED';
