@@ -29,6 +29,18 @@ const allowedOrigins = (process.env.ALLOWED_ORIGINS || '')
   .split(',').map(normalizarOrigem).filter(Boolean);
 const loginAttempts = new Map();
 
+function origemDaPropriaAplicacao(req, origin) {
+  const hostEncaminhado = req.headers['x-forwarded-host'];
+  const host = (typeof hostEncaminhado === 'string' ? hostEncaminhado.split(',')[0] : req.get('host'))?.trim();
+  if (!host) return false;
+
+  const protocoloEncaminhado = req.headers['x-forwarded-proto'];
+  const protocolo = (typeof protocoloEncaminhado === 'string'
+    ? protocoloEncaminhado.split(',')[0]
+    : req.protocol).trim();
+  return normalizarOrigem(origin) === normalizarOrigem(`${protocolo}://${host}`);
+}
+
 function securityHeaders(req, res, next) {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
@@ -58,9 +70,12 @@ function limitarLogin(req, res, next) {
 
 // Middlewares
 app.use(securityHeaders);
-app.use(cors({
+app.use((req, res, next) => cors({
   origin(origin, callback) {
-    if (!origin || allowedOrigins.includes(normalizarOrigem(origin))) return callback(null, true);
+    if (!origin || origemDaPropriaAplicacao(req, origin) ||
+        allowedOrigins.includes(normalizarOrigem(origin))) {
+      return callback(null, true);
+    }
     const error = new Error('Origem nao autorizada.');
     error.code = 'ORIGIN_NOT_ALLOWED';
     return callback(error);
@@ -68,7 +83,7 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   maxAge: 86400
-}));
+})(req, res, next));
 app.use((error, req, res, next) => {
   if (error.code === 'ORIGIN_NOT_ALLOWED') {
     return res.status(403).json({ erro: 'Origem nao autorizada.' });
