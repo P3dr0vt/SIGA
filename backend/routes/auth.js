@@ -153,7 +153,26 @@ router.post('/bootstrap-admin', async (req, res) => {
     return res.status(201).json({ mensagem: 'Administrador provisionado. Remova ADMIN_BOOTSTRAP_TOKEN agora.' });
   } catch (error) {
     console.error('Erro no provisionamento inicial:', error);
-    return res.status(500).json({ erro: 'Erro ao provisionar administrador.' });
+    const categorias = {
+      '28P01': 'credenciais_do_banco',
+      '42P01': 'tabela_usuarios_ausente',
+      '42703': 'schema_desatualizado',
+      '42501': 'permissao_do_banco',
+      '23502': 'coluna_obrigatoria',
+      '23503': 'relacionamento_invalido',
+      '23505': 'registro_duplicado',
+      '23514': 'restricao_do_schema',
+      ENOTFOUND: 'endereco_do_banco',
+      ECONNREFUSED: 'conexao_recusada',
+      ETIMEDOUT: 'tempo_de_conexao',
+      SELF_SIGNED_CERT_IN_CHAIN: 'certificado_tls',
+      DEPTH_ZERO_SELF_SIGNED_CERT: 'certificado_tls',
+      UNABLE_TO_VERIFY_LEAF_SIGNATURE: 'certificado_tls'
+    };
+    return res.status(500).json({
+      erro: 'Erro ao provisionar administrador.',
+      categoria: categorias[error.code] || 'banco_de_dados'
+    });
   }
 });
 
