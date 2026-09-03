@@ -22,6 +22,9 @@ document.addEventListener('DOMContentLoaded', function () {
   const usuario = JSON.parse(localStorage.getItem('gera_usuario'));
   if (!usuario) { window.location.href = 'login.html'; return; }
 
+  const menuUsuarios = document.getElementById('menuUsuarios');
+  if (menuUsuarios && usuario.perfil === 'admin') menuUsuarios.style.display = '';
+
   // Perfil TV: menu sera filtrado no HTML
   
   // Desabilitar seletores para TV

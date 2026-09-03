@@ -177,6 +177,60 @@ router.post('/bootstrap-admin', async (req, res) => {
   }
 });
 
+// Gestao de administradores: disponivel somente para administradores autenticados.
+router.get('/usuarios/administradores', autenticar, async (req, res) => {
+  if (!req.usuario || req.usuario.perfil !== 'admin') {
+    return res.status(403).json({ erro: 'Apenas administradores podem consultar esta lista.' });
+  }
+  try {
+    const [rows] = await db.execute(
+      `SELECT id_usuario, email, nome, ativo, primeiro_acesso
+       FROM Usuarios WHERE perfil = 'admin' ORDER BY nome, email`
+    );
+    res.setHeader('Cache-Control', 'no-store');
+    return res.json(rows);
+  } catch (error) {
+    console.error('Erro ao listar administradores:', error);
+    return res.status(500).json({ erro: 'Erro ao listar administradores.' });
+  }
+});
+
+router.post('/usuarios/administradores', autenticar, async (req, res) => {
+  if (!req.usuario || req.usuario.perfil !== 'admin') {
+    return res.status(403).json({ erro: 'Apenas administradores podem criar outra conta administrativa.' });
+  }
+
+  const email = normalizarEmail(req.body.email);
+  const nome = typeof req.body.nome === 'string' ? req.body.nome.trim() : '';
+  if (!email || nome.length < 2 || nome.length > 255) {
+    return res.status(400).json({ erro: 'Informe um nome e um e-mail validos.' });
+  }
+
+  const senhaTemporaria = `${crypto.randomBytes(12).toString('base64url')}Aa1!`;
+  try {
+    const hash = await bcrypt.hash(senhaTemporaria, 12);
+    const [result] = await db.execute(
+      `INSERT INTO Usuarios (email, senha, nome, perfil, primeiro_acesso, ativo)
+       VALUES (?, ?, ?, 'admin', TRUE, TRUE)
+       RETURNING id_usuario`,
+      [email, hash, nome]
+    );
+    res.setHeader('Cache-Control', 'no-store');
+    return res.status(201).json({
+      id_usuario: result.insertId,
+      email,
+      senha_temporaria: senhaTemporaria,
+      mensagem: 'Administrador criado. A senha devera ser alterada no primeiro acesso.'
+    });
+  } catch (error) {
+    if (error.code === '23505') {
+      return res.status(409).json({ erro: 'Ja existe um usuario com este e-mail.' });
+    }
+    console.error('Erro ao criar administrador:', error);
+    return res.status(500).json({ erro: 'Erro ao criar administrador.' });
+  }
+});
+
 // Redefinicao administrativa: a senha temporaria e exibida uma unica vez.
 router.post('/usuarios/:id/resetar-senha', autenticar, async (req, res) => {
   if (!req.usuario || req.usuario.perfil !== 'admin') {
