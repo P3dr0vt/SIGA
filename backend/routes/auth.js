@@ -177,15 +177,15 @@ router.post('/bootstrap-admin', async (req, res) => {
   }
 });
 
-// Gestao de administradores: disponivel somente para administradores autenticados.
-router.get('/usuarios/administradores', autenticar, async (req, res) => {
+// Contas administrativas e de exibicao podem ser gerenciadas apenas por administradores.
+router.get('/usuarios/gerenciaveis', autenticar, async (req, res) => {
   if (!req.usuario || req.usuario.perfil !== 'admin') {
     return res.status(403).json({ erro: 'Apenas administradores podem consultar esta lista.' });
   }
   try {
     const [rows] = await db.execute(
-      `SELECT id_usuario, email, nome, ativo, primeiro_acesso
-       FROM Usuarios WHERE perfil = 'admin' ORDER BY nome, email`
+      `SELECT id_usuario, email, nome, perfil, ativo, primeiro_acesso
+       FROM Usuarios WHERE perfil IN ('admin', 'tv') ORDER BY perfil, nome, email`
     );
     res.setHeader('Cache-Control', 'no-store');
     return res.json(rows);

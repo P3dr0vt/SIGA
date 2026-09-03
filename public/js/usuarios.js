@@ -25,7 +25,7 @@ async function carregarAdministradores() {
   const mensagem = document.getElementById('mensagemLista');
   const lista = document.getElementById('listaUsuarios');
   try {
-    const response = await fetch(`${API_BASE}/auth/usuarios/administradores`, {
+    const response = await fetch(`${API_BASE}/auth/usuarios/gerenciaveis`, {
       headers: headersAutenticados()
     });
     const data = await respostaJson(response);
@@ -55,7 +55,9 @@ function criarCard(usuario) {
   email.textContent = usuario.email;
   const status = document.createElement('div');
   status.className = 'usuario-status';
-  status.textContent = usuario.primeiro_acesso ? 'Aguardando troca da senha temporária' : 'Conta ativa';
+  const perfil = usuario.perfil === 'tv' ? 'Exibição/TV' : 'Administrador';
+  const situacao = usuario.primeiro_acesso ? 'aguardando troca da senha temporária' : 'conta ativa';
+  status.textContent = `${perfil} · ${situacao}`;
   dados.append(nome, email, status);
 
   const redefinir = document.createElement('button');
